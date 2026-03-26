@@ -1,0 +1,771 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../data/mock_data.dart';
+import '../providers/favorites_provider.dart';
+import '../routes/app_router.dart';
+import '../theme/app_colors.dart';
+import '../widgets/app_button.dart';
+import '../widgets/app_chrome.dart';
+import '../widgets/app_icons.dart';
+import '../widgets/app_input.dart';
+import '../widgets/bottom_nav.dart';
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final PageController _heroController = PageController(viewportFraction: 0.9);
+  int _heroIndex = 0;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (!_heroController.hasClients) return;
+      final next = (_heroIndex + 1) % heroItems.length;
+      _heroController.animateToPage(
+        next,
+        duration: const Duration(milliseconds: 360),
+        curve: Curves.easeOutCubic,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _heroController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final favorites = context.watch<FavoritesProvider>();
+
+    return Scaffold(
+      body: AppBackdrop(
+        child: Stack(
+          children: [
+            ListView(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
+              children: [
+                const _Header(),
+                const SizedBox(height: 18),
+                _HeroCarousel(
+                  controller: _heroController,
+                  index: _heroIndex,
+                  onIndexChanged: (value) => setState(() => _heroIndex = value),
+                ),
+                const SizedBox(height: 18),
+                const _FeatureStrip(),
+                const SizedBox(height: 18),
+                const _CategorySection(),
+                const SizedBox(height: 18),
+                const _HowItWorksSection(),
+                const SizedBox(height: 18),
+                _RecentSection(favorites: favorites),
+                const SizedBox(height: 18),
+                const _Callout(),
+              ],
+            ),
+            const Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: BottomNav(currentRoute: RouteNames.home),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Header extends StatelessWidget {
+  const _Header();
+
+  @override
+  Widget build(BuildContext context) {
+    return AppPanel(
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const AppAvatar(name: 'Swapiify', inverse: true),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'For today',
+                      style: TextStyle(
+                        color: AppColors.mutedForeground,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Find something beautiful nearby.',
+                      style: TextStyle(
+                        fontSize: 20,
+                        height: 1.2,
+                        fontWeight: FontWeight.w700,
+                        fontFamily: 'Playfair Display',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: AppColors.highlight,
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: const Icon(
+                  Icons.notifications_none_rounded,
+                  color: AppColors.plumDark,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const AppInput(
+            hintText: 'Search for cameras, books, bags...',
+            prefixIcon: Icon(Icons.search_rounded, size: 20),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeroCarousel extends StatelessWidget {
+  final PageController controller;
+  final int index;
+  final ValueChanged<int> onIndexChanged;
+
+  const _HeroCarousel({
+    required this.controller,
+    required this.index,
+    required this.onIndexChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AppPanel(
+      color: AppColors.plumDark,
+      padding: const EdgeInsets.fromLTRB(0, 20, 0, 20),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'FRESH PICKS',
+                        style: TextStyle(
+                          color: AppColors.coralLight,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Thoughtful finds, updated daily.',
+                        style: TextStyle(
+                          color: AppColors.cream,
+                          fontSize: 28,
+                          height: 1.1,
+                          fontWeight: FontWeight.w700,
+                          fontFamily: 'Playfair Display',
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'A softer browsing experience with fewer distractions and stronger item detail.',
+                        style: TextStyle(
+                          color: AppColors.cream.withValues(alpha: 0.76),
+                          height: 1.45,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  '${index + 1}/${heroItems.length}',
+                  style: TextStyle(
+                    color: AppColors.cream.withValues(alpha: 0.72),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            height: 260,
+            child: PageView.builder(
+              controller: controller,
+              onPageChanged: onIndexChanged,
+              itemCount: heroItems.length,
+              itemBuilder: (context, itemIndex) {
+                final item = heroItems[itemIndex];
+                return Padding(
+                  padding: const EdgeInsets.only(left: 20, right: 8),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.cream,
+                      borderRadius: BorderRadius.circular(26),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 7,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.highlight,
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: const Text(
+                                    'Most saved this week',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.plumDark,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  item.title,
+                                  style: const TextStyle(
+                                    fontSize: 24,
+                                    height: 1.12,
+                                    fontWeight: FontWeight.w700,
+                                    fontFamily: 'Playfair Display',
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Text(
+                                  item.description,
+                                  style: const TextStyle(
+                                    color: AppColors.mutedForeground,
+                                    height: 1.45,
+                                  ),
+                                ),
+                                const Spacer(),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: AppButton(
+                                        label: 'View details',
+                                        onPressed: () => Navigator.pushNamed(
+                                          context,
+                                          '${RouteNames.product}/${item.id}',
+                                        ),
+                                        variant: AppButtonVariant.coral,
+                                        fullWidth: true,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    AppButton(
+                                      icon: const Icon(
+                                        Icons.bookmark_border_rounded,
+                                      ),
+                                      onPressed: () {},
+                                      variant: AppButtonVariant.outline,
+                                      size: AppButtonSize.icon,
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        ClipRRect(
+                          borderRadius: const BorderRadius.only(
+                            topRight: Radius.circular(26),
+                            bottomRight: Radius.circular(26),
+                          ),
+                          child: Image.asset(
+                            item.image,
+                            width: 130,
+                            height: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(heroItems.length, (dotIndex) {
+              final active = dotIndex == index;
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                width: active ? 28 : 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: active
+                      ? AppColors.coralLight
+                      : AppColors.cream.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FeatureStrip extends StatelessWidget {
+  const _FeatureStrip();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 154,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: features.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 12),
+        itemBuilder: (context, index) {
+          final feature = features[index];
+          return SizedBox(
+            width: 220,
+            child: AppPanel(
+              color: index.isEven ? AppColors.card : AppColors.highlight,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      color: AppColors.plumDark,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(appIcon(feature.icon), color: AppColors.cream),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    feature.title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    feature.description,
+                    style: const TextStyle(
+                      color: AppColors.mutedForeground,
+                      height: 1.45,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _CategorySection extends StatelessWidget {
+  const _CategorySection();
+
+  @override
+  Widget build(BuildContext context) {
+    return AppPanel(
+      child: Column(
+        children: [
+          AppSectionHeading(
+            eyebrow: 'Browse by category',
+            title: 'Start from a mood, not a maze.',
+            subtitle:
+                'Quick paths into the kinds of items people actually exchange.',
+            trailing: TextButton(
+              onPressed: () => Navigator.pushNamed(context, RouteNames.browse),
+              child: const Text('Browse all'),
+            ),
+          ),
+          const SizedBox(height: 18),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              childAspectRatio: 0.95,
+            ),
+            itemCount: categories.length,
+            itemBuilder: (context, index) {
+              final category = categories[index];
+              return InkWell(
+                onTap: () => Navigator.pushNamed(context, RouteNames.browse),
+                borderRadius: BorderRadius.circular(22),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: index.isEven ? AppColors.cream : AppColors.highlight,
+                    borderRadius: BorderRadius.circular(22),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: AppColors.card,
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: Icon(
+                          appIcon(category.icon),
+                          color: AppColors.plumDark,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        category.name,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HowItWorksSection extends StatelessWidget {
+  const _HowItWorksSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return AppPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const AppSectionHeading(
+            eyebrow: 'Simple flow',
+            title: 'Post, match, chat, swap.',
+            subtitle:
+                'Everything is designed to reduce friction without losing trust.',
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            height: 138,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: howItWorks.length,
+              separatorBuilder: (context, index) => const SizedBox(width: 12),
+              itemBuilder: (context, index) {
+                final step = howItWorks[index];
+                return Container(
+                  width: 126,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.cream,
+                    borderRadius: BorderRadius.circular(22),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '0${step.step}',
+                        style: const TextStyle(
+                          color: AppColors.coralDark,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: AppColors.plumDark,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Icon(
+                          appIcon(step.icon),
+                          color: AppColors.cream,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        step.title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecentSection extends StatelessWidget {
+  final FavoritesProvider favorites;
+
+  const _RecentSection({required this.favorites});
+
+  @override
+  Widget build(BuildContext context) {
+    return AppPanel(
+      child: Column(
+        children: [
+          AppSectionHeading(
+            eyebrow: 'Latest listings',
+            title: 'Fresh swaps with just enough information.',
+            subtitle:
+                'Fast visual scanning, then deeper detail when you need it.',
+            trailing: TextButton(
+              onPressed: () => Navigator.pushNamed(context, RouteNames.browse),
+              child: const Text('See all'),
+            ),
+          ),
+          const SizedBox(height: 18),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 0.7,
+            ),
+            itemCount: recentItems.length,
+            itemBuilder: (context, index) {
+              final item = recentItems[index];
+              final isFavorite = favorites.isFavorite(item.id);
+              return InkWell(
+                onTap: () => Navigator.pushNamed(
+                  context,
+                  '${RouteNames.product}/${item.id}',
+                ),
+                borderRadius: BorderRadius.circular(24),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.cream,
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Stack(
+                          children: [
+                            Positioned.fill(
+                              child: ClipRRect(
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(24),
+                                ),
+                                child: Image.asset(
+                                  item.image,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              top: 10,
+                              right: 10,
+                              child: InkWell(
+                                onTap: () => favorites.toggle(item.id),
+                                borderRadius: BorderRadius.circular(999),
+                                child: Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.card.withValues(
+                                      alpha: 0.9,
+                                    ),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    isFavorite
+                                        ? Icons.favorite_rounded
+                                        : Icons.favorite_border_rounded,
+                                    size: 18,
+                                    color: isFavorite
+                                        ? AppColors.coralDark
+                                        : AppColors.mutedForeground,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(14),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.highlight,
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Text(
+                                    item.category,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              item.location,
+                              style: const TextStyle(
+                                color: AppColors.mutedForeground,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Callout extends StatelessWidget {
+  const _Callout();
+
+  @override
+  Widget build(BuildContext context) {
+    return AppPanel(
+      color: AppColors.highlight,
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Have something worth trading?',
+                  style: TextStyle(
+                    fontSize: 24,
+                    height: 1.15,
+                    fontWeight: FontWeight.w700,
+                    fontFamily: 'Playfair Display',
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'List it with a calmer, cleaner posting flow and reach nearby swappers quickly.',
+                  style: TextStyle(
+                    color: AppColors.mutedForeground,
+                    height: 1.45,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                AppButton(
+                  label: 'Add an item',
+                  icon: const Icon(Icons.add_rounded, size: 18),
+                  onPressed: () => Navigator.pushNamed(context, RouteNames.add),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              color: AppColors.plumDark,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: const Icon(
+              Icons.inventory_2_outlined,
+              color: AppColors.cream,
+              size: 32,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

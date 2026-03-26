@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "116497079176",
+    "project_id": "swapiify-85b9c",
+    "storage_bucket": "swapiify-85b9c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:116497079176:android:6b44aa68939f9a9f6eb83d",
+        "android_client_info": {
+          "package_name": "com.example.swapiify"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBecCza0cGfUGad8xGEpzMuoA2V1wY_Q9Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
