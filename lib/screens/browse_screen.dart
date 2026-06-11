@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/item.dart';
-import '../providers/favorites_provider.dart';
 import '../providers/items_provider.dart';
 import '../routes/app_router.dart';
 import '../theme/app_colors.dart';
@@ -10,7 +9,8 @@ import '../widgets/app_badge.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_chrome.dart';
 import '../widgets/app_input.dart';
-import '../widgets/bottom_nav.dart';
+import '../widgets/app_scaffold.dart';
+import '../widgets/product_card.dart';
 
 class BrowseScreen extends StatefulWidget {
   const BrowseScreen({super.key});
@@ -24,16 +24,13 @@ class _BrowseScreenState extends State<BrowseScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final favorites = context.watch<FavoritesProvider>();
     final itemsProvider = context.read<ItemsProvider>();
 
-    return Scaffold(
-      body: AppBackdrop(
-        child: Stack(
-          children: [
-            StreamBuilder<List<Item>>(
-              stream: itemsProvider.itemsStream(),
-              builder: (context, snapshot) {
+    return AppScaffold(
+      currentRoute: RouteNames.browse,
+      body: StreamBuilder<List<Item>>(
+        stream: itemsProvider.itemsStream(),
+        builder: (context, snapshot) {
                 final items = snapshot.data ?? const <Item>[];
                 final categories = _buildCategories(items);
                 final filtered = _activeCategory == 'All'
@@ -43,7 +40,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
                           .toList();
 
                 return ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 130),
                   children: [
                     _Header(
                       categories: categories,
@@ -54,7 +51,6 @@ class _BrowseScreenState extends State<BrowseScreen> {
                     const SizedBox(height: 18),
                     AppPanel(
                       child: _BrowseGrid(
-                        favorites: favorites,
                         items: filtered,
                         isLoading:
                             snapshot.connectionState == ConnectionState.waiting,
@@ -65,15 +61,6 @@ class _BrowseScreenState extends State<BrowseScreen> {
                 );
               },
             ),
-            const Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: BottomNav(currentRoute: RouteNames.browse),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -147,13 +134,11 @@ class _Header extends StatelessWidget {
 }
 
 class _BrowseGrid extends StatelessWidget {
-  final FavoritesProvider favorites;
   final List<Item> items;
   final bool isLoading;
   final bool hasError;
 
   const _BrowseGrid({
-    required this.favorites,
     required this.items,
     required this.isLoading,
     required this.hasError,
@@ -209,133 +194,8 @@ class _BrowseGrid extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 16),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 0.7,
-          ),
-          itemCount: items.length,
-          itemBuilder: (context, index) {
-            final item = items[index];
-            final image = item.images.isNotEmpty ? item.images.first : '';
-            final isFavorite = favorites.isFavorite(item.id);
-            return InkWell(
-              onTap: () => Navigator.pushNamed(
-                context,
-                '${RouteNames.product}/${item.id}',
-              ),
-              borderRadius: BorderRadius.circular(24),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: AppColors.cream,
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Stack(
-                        children: [
-                          Positioned.fill(
-                            child: ClipRRect(
-                              borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(24),
-                              ),
-                              child: _ItemImage(image: image),
-                            ),
-                          ),
-                          Positioned(
-                            top: 10,
-                            right: 10,
-                            child: InkWell(
-                              onTap: () => favorites.toggle(item.id),
-                              borderRadius: BorderRadius.circular(999),
-                              child: Container(
-                                width: 36,
-                                height: 36,
-                                decoration: BoxDecoration(
-                                  color: AppColors.card.withValues(alpha: 0.92),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  isFavorite
-                                      ? Icons.favorite_rounded
-                                      : Icons.favorite_border_rounded,
-                                  size: 18,
-                                  color: isFavorite
-                                      ? AppColors.coralDark
-                                      : AppColors.mutedForeground,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(14),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            item.category,
-                            style: const TextStyle(
-                              color: AppColors.coralDark,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            item.location,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: AppColors.mutedForeground,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
+        ItemCardGrid(items: items),
       ],
     );
-  }
-}
-
-class _ItemImage extends StatelessWidget {
-  final String image;
-
-  const _ItemImage({required this.image});
-
-  @override
-  Widget build(BuildContext context) {
-    if (image.isEmpty) {
-      return Container(color: AppColors.muted);
-    }
-    if (image.startsWith('http')) {
-      return Image.network(image, fit: BoxFit.cover);
-    }
-    return Image.asset(image, fit: BoxFit.cover);
   }
 }

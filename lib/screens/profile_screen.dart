@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../models/item.dart';
 import '../providers/auth_provider.dart';
+import '../providers/favorites_provider.dart';
+import '../providers/items_provider.dart';
 import '../routes/app_router.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_chrome.dart';
-import '../widgets/bottom_nav.dart';
+import '../widgets/app_scaffold.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -14,17 +17,18 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+    final favorites = context.watch<FavoritesProvider>();
+    final items = context.read<ItemsProvider>();
     final profile = auth.profile;
+    final uid = auth.user?.uid;
 
-    return Scaffold(
-      body: AppBackdrop(
-        child: Stack(
-          children: [
-            ListView(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
-              children: [
-                AppPanel(
-                  color: AppColors.plumDark,
+    return AppScaffold(
+      currentRoute: RouteNames.profile,
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 130),
+        children: [
+          AppPanel(
+            color: AppColors.plumDark,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -112,7 +116,53 @@ class ProfileScreen extends StatelessWidget {
                             'Listings, favorites, history, and account controls in one place.',
                       ),
                       const SizedBox(height: 18),
-                      ..._menuItems.map((item) => _MenuTile(item: item)),
+                      _MenuTile(
+                        icon: Icons.inventory_2_outlined,
+                        label: 'My listings',
+                        subtitle: 'Manage what you have available to trade.',
+                        emphasis: true,
+                        trailing: uid == null
+                            ? null
+                            : StreamBuilder<List<Item>>(
+                                stream: items.userItemsStream(uid),
+                                builder: (context, snapshot) =>
+                                    _CountLabel('${snapshot.data?.length ?? 0}'),
+                              ),
+                        onTap: () => Navigator.pushNamed(
+                          context,
+                          RouteNames.myListings,
+                        ),
+                      ),
+                      _MenuTile(
+                        icon: Icons.favorite_border_rounded,
+                        label: 'Saved items',
+                        subtitle: 'Keep an eye on listings you may want later.',
+                        trailing: _CountLabel('${favorites.savedIds.length}'),
+                        onTap: () => Navigator.pushNamed(
+                          context,
+                          RouteNames.savedItems,
+                        ),
+                      ),
+                      _MenuTile(
+                        icon: Icons.history_rounded,
+                        label: 'Swap history',
+                        subtitle: 'Look back at completed exchanges.',
+                        trailing: _CountLabel('${profile?.swaps ?? 0}'),
+                        onTap: () => Navigator.pushNamed(
+                          context,
+                          RouteNames.swapHistory,
+                        ),
+                      ),
+                      _MenuTile(
+                        icon: Icons.tune_rounded,
+                        label: 'Settings',
+                        subtitle: 'Privacy, alerts, and account preferences.',
+                        onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Settings are coming soon.'),
+                          ),
+                        ),
+                      ),
                       const SizedBox(height: 14),
                       AppButton(
                         label: 'Log out',
@@ -132,16 +182,7 @@ class ProfileScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-              ],
-            ),
-            const Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: BottomNav(currentRoute: RouteNames.profile),
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -205,108 +246,93 @@ class _StatCard extends StatelessWidget {
 }
 
 class _MenuTile extends StatelessWidget {
-  final _MenuItem item;
+  final IconData icon;
+  final String label;
+  final String subtitle;
+  final bool emphasis;
+  final Widget? trailing;
+  final VoidCallback onTap;
 
-  const _MenuTile({required this.item});
+  const _MenuTile({
+    required this.icon,
+    required this.label,
+    required this.subtitle,
+    required this.onTap,
+    this.emphasis = false,
+    this.trailing,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: item.emphasis ? AppColors.highlight : AppColors.cream,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(22),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.card,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(item.icon, color: AppColors.plumDark),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: emphasis ? AppColors.highlight : AppColors.cream,
+            borderRadius: BorderRadius.circular(22),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.label,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.card,
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  item.subtitle,
-                  style: const TextStyle(
-                    color: AppColors.mutedForeground,
-                    fontSize: 12,
-                  ),
+                child: Icon(icon, color: AppColors.plumDark),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        color: AppColors.mutedForeground,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              if (trailing != null) ...[trailing!, const SizedBox(width: 6)],
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.mutedForeground,
+              ),
+            ],
           ),
-          Text(
-            item.value,
-            style: const TextStyle(
-              color: AppColors.mutedForeground,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(width: 6),
-          const Icon(
-            Icons.chevron_right_rounded,
-            color: AppColors.mutedForeground,
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
-class _MenuItem {
-  final IconData icon;
-  final String label;
-  final String subtitle;
+class _CountLabel extends StatelessWidget {
   final String value;
-  final bool emphasis;
 
-  const _MenuItem({
-    required this.icon,
-    required this.label,
-    required this.subtitle,
-    required this.value,
-    this.emphasis = false,
-  });
+  const _CountLabel(this.value);
+
+  @override
+  Widget build(BuildContext context) {
+    if (value.isEmpty) return const SizedBox.shrink();
+    return Text(
+      value,
+      style: const TextStyle(
+        color: AppColors.mutedForeground,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
 }
-
-const _menuItems = <_MenuItem>[
-  _MenuItem(
-    icon: Icons.inventory_2_outlined,
-    label: 'My listings',
-    subtitle: 'Manage what you have available to trade.',
-    value: '12',
-    emphasis: true,
-  ),
-  _MenuItem(
-    icon: Icons.favorite_border_rounded,
-    label: 'Saved items',
-    subtitle: 'Keep an eye on listings you may want later.',
-    value: '8',
-  ),
-  _MenuItem(
-    icon: Icons.history_rounded,
-    label: 'Swap history',
-    subtitle: 'Look back at completed exchanges.',
-    value: '24',
-  ),
-  _MenuItem(
-    icon: Icons.tune_rounded,
-    label: 'Settings',
-    subtitle: 'Privacy, alerts, and account preferences.',
-    value: '',
-  ),
-];

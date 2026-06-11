@@ -73,8 +73,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final slide = _slides[_currentIndex];
-
     return Scaffold(
       body: AppBackdrop(
         child: SafeArea(
@@ -104,7 +102,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'swapiify',
+                          'Swapiify',
                           style: TextStyle(
                             fontSize: 26,
                             fontWeight: FontWeight.w700,
@@ -134,12 +132,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   ],
                 ),
                 const SizedBox(height: 28),
-                AppSectionHeading(
-                  eyebrow: 'A cleaner way to swap',
-                  title: slide.title,
-                  subtitle: slide.description,
-                ),
-                const SizedBox(height: 24),
+                // AppSectionHeading(
+                //   eyebrow: 'A cleaner way to swap',
+                //   title: slide.title,
+                //   subtitle: slide.description,
+                // ),
+                // const SizedBox(height: 24),
                 Expanded(
                   child: PageView.builder(
                     controller: _controller,
@@ -149,127 +147,124 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     itemBuilder: (context, index) {
                       final item = _slides[index];
                       return Padding(
-                        padding: const EdgeInsets.only(right: 14),
-                        child: AppPanel(
-                          padding: const EdgeInsets.all(24),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                width: 72,
-                                height: 72,
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [
-                                      AppColors.coralLight,
-                                      AppColors.coral,
-                                    ],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
-                                  borderRadius: BorderRadius.circular(24),
-                                ),
-                                child: Icon(
-                                  item.icon,
-                                  size: 32,
-                                  color: AppColors.cream,
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-                              Expanded(
-                                child: LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    final compact = constraints.maxHeight < 260;
-                                    final titleSize = compact ? 20.0 : 24.0;
-                                    final bodySize = compact ? 13.0 : 14.0;
-                                    final noteSize = compact ? 12.0 : 13.0;
+                        padding: const EdgeInsets.only(right: 10),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Container(
+                            //   width: 72,
+                            //   height: 72,
+                            //   decoration: BoxDecoration(
+                            //     gradient: const LinearGradient(
+                            //       colors: [
+                            //         AppColors.coralLight,
+                            //         AppColors.coral,
+                            //       ],
+                            //       begin: Alignment.topLeft,
+                            //       end: Alignment.bottomRight,
+                            //     ),
+                            //     borderRadius: BorderRadius.circular(24),
+                            //   ),
+                            //   child: Icon(
+                            //     item.icon,
+                            //     size: 32,
+                            //     color: AppColors.cream,
+                            //   ),
+                            // ),
+                            // const SizedBox(height: 24),
+                            Expanded(
+                              child: LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final compact = constraints.maxHeight < 260;
+                                  final titleSize = compact ? 20.0 : 24.0;
+                                  final bodySize = compact ? 13.0 : 14.0;
+                                  final noteSize = compact ? 12.0 : 13.0;
 
-                                    return Container(
-                                      decoration: BoxDecoration(
-                                        color: AppColors.plumDark,
-                                        borderRadius: BorderRadius.circular(28),
-                                      ),
-                                      padding: EdgeInsets.all(
-                                        compact ? 18 : 24,
-                                      ),
-                                      child: SingleChildScrollView(
-                                        physics:
-                                            const NeverScrollableScrollPhysics(),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                              '0${index + 1}',
-                                              style: const TextStyle(
-                                                color: AppColors.coralLight,
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w700,
-                                                letterSpacing: 1.4,
-                                              ),
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      color: AppColors.plumDark,
+                                      borderRadius: BorderRadius.circular(28),
+                                    ),
+                                    padding: EdgeInsets.all(compact ? 18 : 24),
+                                    child: SingleChildScrollView(
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            '0${index + 1}',
+                                            style: const TextStyle(
+                                              color: AppColors.coralLight,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w700,
+                                              letterSpacing: 1.4,
                                             ),
-                                            SizedBox(height: compact ? 10 : 14),
-                                            Text(
-                                              item.title,
-                                              maxLines: compact ? 3 : 4,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: TextStyle(
-                                                color: AppColors.cream,
-                                                fontSize: titleSize,
-                                                height: 1.15,
-                                                fontWeight: FontWeight.w700,
-                                                fontFamily: 'Playfair Display',
-                                              ),
+                                          ),
+                                          SizedBox(height: compact ? 10 : 14),
+                                          Text(
+                                            item.title,
+                                            maxLines: compact ? 3 : 4,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              color: AppColors.cream,
+                                              fontSize: titleSize,
+                                              height: 1.15,
+                                              fontWeight: FontWeight.w700,
+                                              fontFamily: 'Playfair Display',
                                             ),
-                                            SizedBox(height: compact ? 8 : 12),
-                                            Text(
-                                              item.description,
-                                              maxLines: compact ? 3 : 4,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: TextStyle(
-                                                color: AppColors.cream
-                                                    .withValues(alpha: 0.8),
-                                                fontSize: bodySize,
-                                                height: 1.45,
+                                          ),
+                                          SizedBox(height: compact ? 8 : 12),
+                                          Text(
+                                            item.description,
+                                            maxLines: compact ? 3 : 4,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              color: AppColors.cream.withValues(
+                                                alpha: 0.8,
                                               ),
+                                              fontSize: bodySize,
+                                              height: 1.45,
                                             ),
-                                            SizedBox(height: compact ? 12 : 16),
-                                            Container(
-                                              padding: EdgeInsets.all(
-                                                compact ? 12 : 14,
+                                          ),
+                                          SizedBox(height: compact ? 12 : 16),
+                                          Container(
+                                            padding: EdgeInsets.all(
+                                              compact ? 12 : 14,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.cream.withValues(
+                                                alpha: 0.08,
                                               ),
-                                              decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(18),
+                                              border: Border.all(
                                                 color: AppColors.cream
                                                     .withValues(alpha: 0.08),
-                                                borderRadius:
-                                                    BorderRadius.circular(18),
-                                                border: Border.all(
-                                                  color: AppColors.cream
-                                                      .withValues(alpha: 0.08),
-                                                ),
-                                              ),
-                                              child: Text(
-                                                item.note,
-                                                maxLines: compact ? 2 : 3,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: TextStyle(
-                                                  color: AppColors.cream
-                                                      .withValues(alpha: 0.88),
-                                                  fontSize: noteSize,
-                                                  height: 1.4,
-                                                ),
                                               ),
                                             ),
-                                          ],
-                                        ),
+                                            child: Text(
+                                              item.note,
+                                              maxLines: compact ? 2 : 3,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                color: AppColors.cream
+                                                    .withValues(alpha: 0.88),
+                                                fontSize: noteSize,
+                                                height: 1.4,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                    );
-                                  },
-                                ),
+                                    ),
+                                  );
+                                },
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       );
                     },

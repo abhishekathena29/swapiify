@@ -21,9 +21,9 @@ class BottomNav extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+        padding: const EdgeInsets.fromLTRB(14, 0, 14, 6),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
           decoration: BoxDecoration(
             color: AppColors.card.withValues(alpha: 0.96),
             borderRadius: BorderRadius.circular(28),
@@ -37,18 +37,19 @@ class BottomNav extends StatelessWidget {
             ],
           ),
           child: SizedBox(
-            height: 66,
+            height: 64,
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: items.map((item) {
-                final isActive = currentRoute == item.route;
                 if (item.isMain) {
                   return _MainNavButton(item: item);
                 }
-                return _NavButton(
-                  item: item,
-                  isActive: isActive,
-                  onTap: () => _navigate(context, item.route, currentRoute),
+                final isActive = currentRoute == item.route;
+                return Expanded(
+                  child: _NavButton(
+                    item: item,
+                    isActive: isActive,
+                    onTap: () => _navigate(context, item.route, currentRoute),
+                  ),
                 );
               }).toList(),
             ),
@@ -92,11 +93,11 @@ class _NavButton extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
         curve: Curves.easeOut,
-        width: 68,
-        height: 54,
+        height: 52,
+        margin: const EdgeInsets.symmetric(horizontal: 3),
         decoration: BoxDecoration(
           color: isActive ? AppColors.highlight : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(18),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -109,6 +110,8 @@ class _NavButton extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               item.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
@@ -131,29 +134,31 @@ class _MainNavButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () => Navigator.pushReplacementNamed(context, item.route),
-      borderRadius: BorderRadius.circular(999),
-      child: Container(
-        width: 56,
-        height: 56,
-        margin: const EdgeInsets.only(bottom: 18),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [AppColors.coral, AppColors.coralDark],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.coralDark.withValues(alpha: 0.32),
-              blurRadius: 18,
-              offset: const Offset(0, 10),
+    return Transform.translate(
+      offset: const Offset(0, -14),
+      child: InkWell(
+        onTap: () => Navigator.pushReplacementNamed(context, item.route),
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [AppColors.coral, AppColors.coralDark],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-          ],
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.coralDark.withValues(alpha: 0.32),
+                blurRadius: 18,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Icon(item.icon, color: AppColors.cream, size: 26),
         ),
-        child: Icon(item.icon, color: AppColors.cream, size: 26),
       ),
     );
   }

@@ -6,11 +6,14 @@ import '../screens/browse_screen.dart';
 import '../screens/chat_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/messages_screen.dart';
+import '../screens/my_listings_screen.dart';
 import '../screens/not_found_screen.dart';
 import '../screens/onboarding_screen.dart';
 import '../screens/product_detail_screen.dart';
 import '../screens/profile_screen.dart';
+import '../screens/saved_items_screen.dart';
 import '../screens/seller_profile_screen.dart';
+import '../screens/swap_history_screen.dart';
 
 class RouteNames {
   static const String onboarding = '/';
@@ -25,6 +28,9 @@ class RouteNames {
   static const String product = '/product';
   static const String chat = '/chat';
   static const String seller = '/seller';
+  static const String myListings = '/my-listings';
+  static const String savedItems = '/saved-items';
+  static const String swapHistory = '/swap-history';
 }
 
 class AppRouter {
@@ -57,6 +63,15 @@ class AppRouter {
     }
     if (name == RouteNames.profile) {
       return _page(const ProfileScreen(), settings);
+    }
+    if (name == RouteNames.myListings) {
+      return _page(const MyListingsScreen(), settings);
+    }
+    if (name == RouteNames.savedItems) {
+      return _page(const SavedItemsScreen(), settings);
+    }
+    if (name == RouteNames.swapHistory) {
+      return _page(const SwapHistoryScreen(), settings);
     }
 
     if (name.startsWith('${RouteNames.product}/')) {

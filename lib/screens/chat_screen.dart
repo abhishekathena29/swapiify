@@ -111,35 +111,22 @@ class _ChatScreenState extends State<ChatScreen> {
                         ),
                 ),
                 const SizedBox(height: 12),
-                AppPanel(
-                  padding: const EdgeInsets.all(10),
-                  child: Row(
-                    children: [
-                      AppButton(
-                        icon: const Icon(
-                          Icons.add_photo_alternate_outlined,
-                          size: 18,
-                        ),
-                        onPressed: () {},
-                        variant: AppButtonVariant.outline,
-                        size: AppButtonSize.icon,
+                Row(
+                  children: [
+                    Expanded(
+                      child: AppInput(
+                        controller: _controller,
+                        hintText: 'Write a message...',
+                        onSubmitted: (_) => _send(chat),
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: AppInput(
-                          controller: _controller,
-                          hintText: 'Write a message...',
-                          onSubmitted: (_) => _send(chat),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      AppButton(
-                        icon: const Icon(Icons.send_rounded, size: 18),
-                        onPressed: () => _send(chat),
-                        size: AppButtonSize.icon,
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 10),
+                    AppButton(
+                      icon: const Icon(Icons.send_rounded, size: 18),
+                      onPressed: () => _send(chat),
+                      size: AppButtonSize.icon,
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -192,47 +179,66 @@ class _Header extends StatelessWidget {
                     ),
                     builder: (context, snapshot) {
                       final thread = snapshot.data;
-                      final title = thread?.title ?? 'Conversation';
-                      return Row(
-                        children: [
-                          AppAvatar(name: title),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  title,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 15,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                const Text(
-                                  'Available now',
-                                  style: TextStyle(
-                                    color: AppColors.mutedForeground,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                      return StreamBuilder<String?>(
+                        stream: thread == null
+                            ? const Stream<String?>.empty()
+                            : chat.userNameStream(thread.otherUserId),
+                        builder: (context, nameSnapshot) {
+                          final resolved = nameSnapshot.data;
+                          final title =
+                              (resolved != null && resolved.isNotEmpty)
+                              ? resolved
+                              : (thread?.title.isNotEmpty == true &&
+                                        thread?.title != 'Conversation'
+                                    ? thread!.title
+                                    : 'Swapiify user');
+                          return _ChatHeaderInfo(title: title);
+                        },
                       );
                     },
                   ),
           ),
-          AppButton(
-            icon: const Icon(Icons.more_horiz_rounded, size: 18),
-            onPressed: () {},
-            variant: AppButtonVariant.outline,
-            size: AppButtonSize.icon,
-          ),
         ],
       ),
+    );
+  }
+}
+
+class _ChatHeaderInfo extends StatelessWidget {
+  final String title;
+
+  const _ChatHeaderInfo({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        AppAvatar(name: title),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
+              ),
+              const SizedBox(height: 2),
+              const Text(
+                'Available now',
+                style: TextStyle(
+                  color: AppColors.mutedForeground,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

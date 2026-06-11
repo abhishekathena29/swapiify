@@ -4,86 +4,53 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../data/mock_data.dart';
-import '../providers/favorites_provider.dart';
+import '../models/item.dart';
+import '../providers/items_provider.dart';
 import '../routes/app_router.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_chrome.dart';
 import '../widgets/app_icons.dart';
 import '../widgets/app_input.dart';
-import '../widgets/bottom_nav.dart';
+import '../widgets/app_scaffold.dart';
+import '../widgets/product_card.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  final PageController _heroController = PageController(viewportFraction: 0.9);
-  int _heroIndex = 0;
-  Timer? _timer;
-
-  @override
-  void initState() {
-    super.initState();
-    _timer = Timer.periodic(const Duration(seconds: 4), (_) {
-      if (!_heroController.hasClients) return;
-      final next = (_heroIndex + 1) % heroItems.length;
-      _heroController.animateToPage(
-        next,
-        duration: const Duration(milliseconds: 360),
-        curve: Curves.easeOutCubic,
-      );
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    _heroController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final favorites = context.watch<FavoritesProvider>();
+    final items = context.read<ItemsProvider>();
 
-    return Scaffold(
-      body: AppBackdrop(
-        child: Stack(
-          children: [
-            ListView(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
-              children: [
-                const _Header(),
+    return AppScaffold(
+      currentRoute: RouteNames.home,
+      body: StreamBuilder<List<Item>>(
+        stream: items.itemsStream(),
+        builder: (context, snapshot) {
+          final list = snapshot.data ?? const <Item>[];
+          final isLoading =
+              snapshot.connectionState == ConnectionState.waiting;
+          final heroItems = list.take(5).toList();
+
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 130),
+            children: [
+              const _Header(),
+              const SizedBox(height: 18),
+              if (heroItems.isNotEmpty) ...[
+                _HeroCarousel(items: heroItems),
                 const SizedBox(height: 18),
-                _HeroCarousel(
-                  controller: _heroController,
-                  index: _heroIndex,
-                  onIndexChanged: (value) => setState(() => _heroIndex = value),
-                ),
-                const SizedBox(height: 18),
-                const _FeatureStrip(),
-                const SizedBox(height: 18),
-                const _CategorySection(),
-                const SizedBox(height: 18),
-                const _HowItWorksSection(),
-                const SizedBox(height: 18),
-                _RecentSection(favorites: favorites),
-                const SizedBox(height: 18),
-                const _Callout(),
               ],
-            ),
-            const Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: BottomNav(currentRoute: RouteNames.home),
-            ),
-          ],
-        ),
+              const _CategorySection(),
+              const SizedBox(height: 18),
+              const _HowItWorksSection(),
+              const SizedBox(height: 18),
+              _RecentSection(items: list, isLoading: isLoading),
+              const SizedBox(height: 18),
+              const _Callout(),
+            ],
+          );
+        },
       ),
     );
   }
@@ -142,9 +109,11 @@ class _Header extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          const AppInput(
+          AppInput(
             hintText: 'Search for cameras, books, bags...',
-            prefixIcon: Icon(Icons.search_rounded, size: 20),
+            prefixIcon: const Icon(Icons.search_rounded, size: 20),
+            onSubmitted: (_) =>
+                Navigator.pushNamed(context, RouteNames.browse),
           ),
         ],
       ),
@@ -152,19 +121,59 @@ class _Header extends StatelessWidget {
   }
 }
 
-class _HeroCarousel extends StatelessWidget {
-  final PageController controller;
-  final int index;
-  final ValueChanged<int> onIndexChanged;
+class _HeroCarousel extends StatefulWidget {
+  final List<Item> items;
 
-  const _HeroCarousel({
-    required this.controller,
-    required this.index,
-    required this.onIndexChanged,
-  });
+  const _HeroCarousel({required this.items});
+
+  @override
+  State<_HeroCarousel> createState() => _HeroCarouselState();
+}
+
+class _HeroCarouselState extends State<_HeroCarousel> {
+  final PageController _controller = PageController(viewportFraction: 0.9);
+  int _index = 0;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTimer();
+  }
+
+  @override
+  void didUpdateWidget(_HeroCarousel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.items.length != widget.items.length) {
+      if (_index >= widget.items.length) _index = 0;
+      _startTimer();
+    }
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    if (widget.items.length <= 1) return;
+    _timer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (!_controller.hasClients) return;
+      final next = (_index + 1) % widget.items.length;
+      _controller.animateToPage(
+        next,
+        duration: const Duration(milliseconds: 360),
+        curve: Curves.easeOutCubic,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final items = widget.items;
     return AppPanel(
       color: AppColors.plumDark,
       padding: const EdgeInsets.fromLTRB(0, 20, 0, 20),
@@ -212,7 +221,7 @@ class _HeroCarousel extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  '${index + 1}/${heroItems.length}',
+                  '${_index + 1}/${items.length}',
                   style: TextStyle(
                     color: AppColors.cream.withValues(alpha: 0.72),
                     fontWeight: FontWeight.w600,
@@ -223,16 +232,18 @@ class _HeroCarousel extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           SizedBox(
-            height: 260,
+            height: 300,
             child: PageView.builder(
-              controller: controller,
-              onPageChanged: onIndexChanged,
-              itemCount: heroItems.length,
+              controller: _controller,
+              onPageChanged: (value) => setState(() => _index = value),
+              itemCount: items.length,
               itemBuilder: (context, itemIndex) {
-                final item = heroItems[itemIndex];
+                final item = items[itemIndex];
+                final image = item.images.isNotEmpty ? item.images.first : '';
                 return Padding(
                   padding: const EdgeInsets.only(left: 20, right: 8),
                   child: Container(
+                    clipBehavior: Clip.antiAlias,
                     decoration: BoxDecoration(
                       color: AppColors.cream,
                       borderRadius: BorderRadius.circular(26),
@@ -255,7 +266,7 @@ class _HeroCarousel extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(999),
                                   ),
                                   child: const Text(
-                                    'Most saved this week',
+                                    'Fresh listing',
                                     style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w700,
@@ -266,61 +277,47 @@ class _HeroCarousel extends StatelessWidget {
                                 const SizedBox(height: 16),
                                 Text(
                                   item.title,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
-                                    fontSize: 24,
+                                    fontSize: 22,
                                     height: 1.12,
                                     fontWeight: FontWeight.w700,
                                     fontFamily: 'Playfair Display',
                                   ),
                                 ),
                                 const SizedBox(height: 10),
-                                Text(
-                                  item.description,
-                                  style: const TextStyle(
-                                    color: AppColors.mutedForeground,
-                                    height: 1.45,
+                                Expanded(
+                                  child: Text(
+                                    item.description.isEmpty
+                                        ? '${item.category} • ${item.location}'
+                                        : item.description,
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 4,
+                                    style: const TextStyle(
+                                      color: AppColors.mutedForeground,
+                                      height: 1.45,
+                                    ),
                                   ),
                                 ),
-                                const Spacer(),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: AppButton(
-                                        label: 'View details',
-                                        onPressed: () => Navigator.pushNamed(
-                                          context,
-                                          '${RouteNames.product}/${item.id}',
-                                        ),
-                                        variant: AppButtonVariant.coral,
-                                        fullWidth: true,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    AppButton(
-                                      icon: const Icon(
-                                        Icons.bookmark_border_rounded,
-                                      ),
-                                      onPressed: () {},
-                                      variant: AppButtonVariant.outline,
-                                      size: AppButtonSize.icon,
-                                    ),
-                                  ],
+                                const SizedBox(height: 14),
+                                AppButton(
+                                  label: 'View details',
+                                  onPressed: () => Navigator.pushNamed(
+                                    context,
+                                    '${RouteNames.product}/${item.id}',
+                                  ),
+                                  variant: AppButtonVariant.coral,
+                                  fullWidth: true,
                                 ),
                               ],
                             ),
                           ),
                         ),
-                        ClipRRect(
-                          borderRadius: const BorderRadius.only(
-                            topRight: Radius.circular(26),
-                            bottomRight: Radius.circular(26),
-                          ),
-                          child: Image.asset(
-                            item.image,
-                            width: 130,
-                            height: double.infinity,
-                            fit: BoxFit.cover,
-                          ),
+                        SizedBox(
+                          width: 130,
+                          height: double.infinity,
+                          child: ProductImage(image: image),
                         ),
                       ],
                     ),
@@ -332,8 +329,8 @@ class _HeroCarousel extends StatelessWidget {
           const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(heroItems.length, (dotIndex) {
-              final active = dotIndex == index;
+            children: List.generate(items.length, (dotIndex) {
+              final active = dotIndex == _index;
               return AnimatedContainer(
                 duration: const Duration(milliseconds: 220),
                 margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -349,61 +346,6 @@ class _HeroCarousel extends StatelessWidget {
             }),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _FeatureStrip extends StatelessWidget {
-  const _FeatureStrip();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 154,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: features.length,
-        separatorBuilder: (context, index) => const SizedBox(width: 12),
-        itemBuilder: (context, index) {
-          final feature = features[index];
-          return SizedBox(
-            width: 220,
-            child: AppPanel(
-              color: index.isEven ? AppColors.card : AppColors.highlight,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 46,
-                    height: 46,
-                    decoration: BoxDecoration(
-                      color: AppColors.plumDark,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Icon(appIcon(feature.icon), color: AppColors.cream),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    feature.title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    feature.description,
-                    style: const TextStyle(
-                      color: AppColors.mutedForeground,
-                      height: 1.45,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
       ),
     );
   }
@@ -468,6 +410,8 @@ class _CategorySection extends StatelessWidget {
                       Text(
                         category.name,
                         textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 12,
@@ -561,9 +505,10 @@ class _HowItWorksSection extends StatelessWidget {
 }
 
 class _RecentSection extends StatelessWidget {
-  final FavoritesProvider favorites;
+  final List<Item> items;
+  final bool isLoading;
 
-  const _RecentSection({required this.favorites});
+  const _RecentSection({required this.items, required this.isLoading});
 
   @override
   Widget build(BuildContext context) {
@@ -581,129 +526,26 @@ class _RecentSection extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 18),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 0.7,
-            ),
-            itemCount: recentItems.length,
-            itemBuilder: (context, index) {
-              final item = recentItems[index];
-              final isFavorite = favorites.isFavorite(item.id);
-              return InkWell(
-                onTap: () => Navigator.pushNamed(
-                  context,
-                  '${RouteNames.product}/${item.id}',
-                ),
-                borderRadius: BorderRadius.circular(24),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.cream,
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Stack(
-                          children: [
-                            Positioned.fill(
-                              child: ClipRRect(
-                                borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(24),
-                                ),
-                                child: Image.asset(
-                                  item.image,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              top: 10,
-                              right: 10,
-                              child: InkWell(
-                                onTap: () => favorites.toggle(item.id),
-                                borderRadius: BorderRadius.circular(999),
-                                child: Container(
-                                  width: 36,
-                                  height: 36,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.card.withValues(
-                                      alpha: 0.9,
-                                    ),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    isFavorite
-                                        ? Icons.favorite_rounded
-                                        : Icons.favorite_border_rounded,
-                                    size: 18,
-                                    color: isFavorite
-                                        ? AppColors.coralDark
-                                        : AppColors.mutedForeground,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+          ProductGridState(
+            isLoading: isLoading,
+            hasError: false,
+            grid: items.isEmpty
+                ? Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(22),
+                    decoration: BoxDecoration(
+                      color: AppColors.highlight,
+                      borderRadius: BorderRadius.circular(22),
+                    ),
+                    child: const Text(
+                      'No listings yet. Be the first to add an item to swap.',
+                      style: TextStyle(
+                        color: AppColors.mutedForeground,
+                        height: 1.45,
                       ),
-                      Padding(
-                        padding: const EdgeInsets.all(14),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              item.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.highlight,
-                                    borderRadius: BorderRadius.circular(999),
-                                  ),
-                                  child: Text(
-                                    item.category,
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              item.location,
-                              style: const TextStyle(
-                                color: AppColors.mutedForeground,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
+                    ),
+                  )
+                : ItemCardGrid(items: items.take(6).toList()),
           ),
         ],
       ),

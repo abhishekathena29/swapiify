@@ -8,10 +8,17 @@ import '../routes/app_router.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_chrome.dart';
 import '../widgets/app_input.dart';
-import '../widgets/bottom_nav.dart';
+import '../widgets/app_scaffold.dart';
 
-class MessagesScreen extends StatelessWidget {
+class MessagesScreen extends StatefulWidget {
   const MessagesScreen({super.key});
+
+  @override
+  State<MessagesScreen> createState() => _MessagesScreenState();
+}
+
+class _MessagesScreenState extends State<MessagesScreen> {
+  String _query = '';
 
   @override
   Widget build(BuildContext context) {
@@ -19,87 +26,102 @@ class MessagesScreen extends StatelessWidget {
     final chatProvider = context.read<ChatProvider>();
     final userId = auth.user?.uid;
 
-    return Scaffold(
-      body: AppBackdrop(
-        child: Stack(
-          children: [
-            ListView(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
-              children: [
-                const _Header(),
-                const SizedBox(height: 18),
-                if (userId == null)
-                  const AppPanel(
+    return AppScaffold(
+      currentRoute: RouteNames.messages,
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 130),
+        children: [
+          _Header(
+            onSearch: (value) => setState(() => _query = value),
+          ),
+          const SizedBox(height: 18),
+          if (userId == null)
+            const AppPanel(
+              child: Text(
+                'Sign in to view conversations and coordinate swaps.',
+                style: TextStyle(color: AppColors.mutedForeground),
+              ),
+            )
+          else
+            StreamBuilder<List<ChatThread>>(
+              stream: chatProvider.threadsStream(userId: userId),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const AppPanel(
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                  );
+                }
+                final threads = snapshot.data ?? const <ChatThread>[];
+                if (threads.isEmpty) {
+                  return const AppPanel(
+                    color: AppColors.highlight,
                     child: Text(
-                      'Sign in to view conversations and coordinate swaps.',
+                      'No conversations yet. Start from any product to message a seller.',
                       style: TextStyle(color: AppColors.mutedForeground),
                     ),
-                  )
-                else
-                  StreamBuilder<List<ChatThread>>(
-                    stream: chatProvider.threadsStream(userId: userId),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const AppPanel(
-                          child: Padding(
-                            padding: EdgeInsets.all(24),
-                            child: Center(child: CircularProgressIndicator()),
-                          ),
-                        );
-                      }
-                      final threads = snapshot.data ?? const <ChatThread>[];
-                      if (threads.isEmpty) {
-                        return AppPanel(
-                          color: AppColors.highlight,
-                          child: const Text(
-                            'No conversations yet. Start from any product to message a seller.',
-                            style: TextStyle(color: AppColors.mutedForeground),
-                          ),
-                        );
-                      }
-                      return AppPanel(
-                        padding: const EdgeInsets.all(10),
-                        child: Column(
-                          children: threads.map((thread) {
-                            return _ThreadTile(thread: thread);
-                          }).toList(),
-                        ),
-                      );
-                    },
+                  );
+                }
+
+                final query = _query.trim().toLowerCase();
+                final filtered = query.isEmpty
+                    ? threads
+                    : threads
+                          .where(
+                            (thread) =>
+                                thread.title.toLowerCase().contains(query) ||
+                                thread.lastMessage.toLowerCase().contains(query),
+                          )
+                          .toList();
+
+                if (filtered.isEmpty) {
+                  return const AppPanel(
+                    child: Text(
+                      'No conversations match your search.',
+                      style: TextStyle(color: AppColors.mutedForeground),
+                    ),
+                  );
+                }
+
+                return AppPanel(
+                  padding: const EdgeInsets.all(10),
+                  child: Column(
+                    children: filtered
+                        .map((thread) => _ThreadTile(thread: thread))
+                        .toList(),
                   ),
-              ],
+                );
+              },
             ),
-            const Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: BottomNav(currentRoute: RouteNames.messages),
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
 }
 
 class _Header extends StatelessWidget {
-  const _Header();
+  final ValueChanged<String> onSearch;
+
+  const _Header({required this.onSearch});
 
   @override
   Widget build(BuildContext context) {
     return AppPanel(
       child: Column(
-        children: const [
-          AppSectionHeading(
+        children: [
+          const AppSectionHeading(
             eyebrow: 'Inbox',
             title: 'Conversations that move a swap forward.',
             subtitle:
                 'Recent threads stay readable, lightweight, and easy to pick back up.',
           ),
-          SizedBox(height: 18),
+          const SizedBox(height: 18),
           AppInput(
-            hintText: 'Search conversations...',
-            prefixIcon: Icon(Icons.search_rounded),
+            hintText: 'Search by name or message...',
+            prefixIcon: const Icon(Icons.search_rounded),
+            onChanged: onSearch,
           ),
         ],
       ),
@@ -114,93 +136,109 @@ class _ThreadTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () =>
-          Navigator.pushNamed(context, '${RouteNames.chat}/${thread.id}'),
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: thread.unread > 0 ? AppColors.highlight : AppColors.cream,
+    final chat = context.read<ChatProvider>();
+
+    // Resolve the other person's real, current name from the users
+    // collection; fall back to the name stored on the thread.
+    return StreamBuilder<String?>(
+      stream: chat.userNameStream(thread.otherUserId),
+      builder: (context, snapshot) {
+        final resolved = snapshot.data;
+        final name = (resolved != null && resolved.isNotEmpty)
+            ? resolved
+            : (thread.title.isNotEmpty && thread.title != 'Conversation'
+                  ? thread.title
+                  : 'Swapiify user');
+
+        return InkWell(
+          onTap: () =>
+              Navigator.pushNamed(context, '${RouteNames.chat}/${thread.id}'),
           borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          children: [
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                AppAvatar(name: thread.title),
-                if (thread.unread > 0)
-                  Positioned(
-                    top: -2,
-                    right: -2,
-                    child: Container(
-                      width: 22,
-                      height: 22,
-                      decoration: const BoxDecoration(
-                        color: AppColors.coralDark,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          '${thread.unread}',
-                          style: const TextStyle(
-                            color: AppColors.cream,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: thread.unread > 0 ? AppColors.highlight : AppColors.cream,
+              borderRadius: BorderRadius.circular(20),
             ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          thread.title,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontWeight: thread.unread > 0
-                                ? FontWeight.w700
-                                : FontWeight.w600,
+            child: Row(
+              children: [
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    AppAvatar(name: name),
+                    if (thread.unread > 0)
+                      Positioned(
+                        top: -2,
+                        right: -2,
+                        child: Container(
+                          width: 22,
+                          height: 22,
+                          decoration: const BoxDecoration(
+                            color: AppColors.coralDark,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${thread.unread}',
+                              style: const TextStyle(
+                                color: AppColors.cream,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                           ),
                         ),
                       ),
+                  ],
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              name,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontWeight: thread.unread > 0
+                                    ? FontWeight.w700
+                                    : FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            _formatTime(thread.lastMessageAt),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.mutedForeground,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
                       Text(
-                        _formatTime(thread.lastMessageAt),
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.mutedForeground,
+                        thread.lastMessage.isEmpty
+                            ? 'Say hello and start the exchange.'
+                            : thread.lastMessage,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: thread.unread > 0
+                              ? AppColors.foreground
+                              : AppColors.mutedForeground,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    thread.lastMessage.isEmpty
-                        ? 'Say hello and start the exchange.'
-                        : thread.lastMessage,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: thread.unread > 0
-                          ? AppColors.foreground
-                          : AppColors.mutedForeground,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

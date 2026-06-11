@@ -49,6 +49,34 @@ class ItemsProvider extends ChangeNotifier {
     });
   }
 
+  /// All items listed by a specific user, newest first.
+  /// Sorted client-side so no composite Firestore index is required.
+  Stream<List<Item>> userItemsStream(String userId) {
+    return _firestore
+        .collection('items')
+        .where('ownerId', isEqualTo: userId)
+        .snapshots()
+        .map((snapshot) {
+          final items = snapshot.docs.map((doc) => Item.fromDoc(doc)).toList();
+          items.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return items;
+        });
+  }
+
+  /// Fetch a set of items by their document ids (used for saved items).
+  Future<List<Item>> itemsByIds(List<String> ids) async {
+    if (ids.isEmpty) return const <Item>[];
+    final docs = await Future.wait(
+      ids.map((id) => _firestore.collection('items').doc(id).get()),
+    );
+    final items = docs
+        .where((doc) => doc.exists)
+        .map((doc) => Item.fromDoc(doc))
+        .toList();
+    items.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return items;
+  }
+
   Future<String> addItem({
     required AddItemInput input,
     required AppUser owner,

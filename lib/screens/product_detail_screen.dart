@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../data/mock_data.dart';
 import '../models/item.dart';
 import '../providers/auth_provider.dart';
 import '../providers/chat_provider.dart';
@@ -38,21 +37,45 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             StreamBuilder<Item?>(
               stream: itemsProvider.itemStream(widget.productId),
               builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const SafeArea(
+                    child: Center(child: CircularProgressIndicator()),
+                  );
+                }
                 final firestoreItem = snapshot.data;
-                final fallback =
-                    productsById[widget.productId] ?? productsById.values.first;
-                final product = firestoreItem?.toProduct() ?? fallback;
-                final images = product.images.isNotEmpty
-                    ? product.images
-                    : fallback.images;
+                if (firestoreItem == null) {
+                  return SafeArea(
+                    bottom: false,
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+                      children: [
+                        _TopBar(
+                          onBack: () => Navigator.pop(context),
+                          isFavorite: false,
+                          onToggleFavorite: () {},
+                        ),
+                        const SizedBox(height: 18),
+                        const AppPanel(
+                          child: Text(
+                            'This listing is no longer available.',
+                            style: TextStyle(color: AppColors.mutedForeground),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                final product = firestoreItem.toProduct();
+                final images = product.images;
                 final isFavorite = favorites.isFavorite(product.id);
-                final sellerId = firestoreItem?.ownerId;
-                final sellerName =
-                    firestoreItem?.ownerName ?? product.seller.name;
+                final sellerId = firestoreItem.ownerId;
+                final sellerName = firestoreItem.ownerName;
 
-                return ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 118),
-                  children: [
+                return SafeArea(
+                  bottom: false,
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 118),
+                    children: [
                     _TopBar(
                       onBack: () => Navigator.pop(context),
                       isFavorite: isFavorite,
@@ -188,7 +211,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 AppButton(
                                   label: 'Profile',
                                   onPressed: () {
-                                    if (sellerId == null) {
+                                    if (sellerId.isEmpty) {
                                       ScaffoldMessenger.of(
                                         context,
                                       ).showSnackBar(
@@ -214,7 +237,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         ],
                       ),
                     ),
-                  ],
+                    ],
+                  ),
                 );
               },
             ),
@@ -236,13 +260,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             final snapshot = await itemsProvider
                                 .itemStream(widget.productId)
                                 .first;
-                            final fallback =
-                                productsById[widget.productId] ??
-                                productsById.values.first;
-                            final product = snapshot?.toProduct() ?? fallback;
                             final sellerId = snapshot?.ownerId;
-                            final sellerName =
-                                snapshot?.ownerName ?? product.seller.name;
+                            final sellerName = snapshot?.ownerName ?? 'Seller';
 
                             if (auth.profile == null) {
                               if (!context.mounted) return;

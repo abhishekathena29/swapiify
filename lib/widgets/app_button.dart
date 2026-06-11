@@ -123,20 +123,26 @@ class AppButton extends StatelessWidget {
     final text = label;
     if (text == null) return icon ?? const SizedBox.shrink();
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        if (icon != null) ...[icon!, const SizedBox(width: 8)],
-        Text(
-          text,
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: size == AppButtonSize.sm ? 12 : 14,
-            letterSpacing: 0.2,
+    // Scale the label down rather than overflowing when the button is placed
+    // in a tight horizontal space (e.g. side-by-side in a card).
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (icon != null) ...[icon!, const SizedBox(width: 8)],
+          Text(
+            text,
+            maxLines: 1,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: size == AppButtonSize.sm ? 12 : 14,
+              letterSpacing: 0.2,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

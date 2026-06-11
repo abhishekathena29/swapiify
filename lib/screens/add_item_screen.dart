@@ -8,7 +8,7 @@ import '../theme/app_colors.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_chrome.dart';
 import '../widgets/app_input.dart';
-import '../widgets/bottom_nav.dart';
+import '../widgets/app_scaffold.dart';
 
 class AddItemScreen extends StatefulWidget {
   const AddItemScreen({super.key});
@@ -117,213 +117,196 @@ class _AddItemScreenState extends State<AddItemScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: AppBackdrop(
-        child: Stack(
-          children: [
-            ListView(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
+    return AppScaffold(
+      currentRoute: RouteNames.add,
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 130),
+        children: [
+          AppPanel(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AppPanel(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const AppSectionHeading(
-                        eyebrow: 'Create listing',
-                        title: 'A cleaner way to post what you want to trade.',
-                        subtitle:
-                            'Keep the listing concise, visual, and easy for others to understand.',
+                const AppSectionHeading(
+                  eyebrow: 'Create listing',
+                  title: 'A cleaner way to post what you want to trade.',
+                  subtitle:
+                      'Keep the listing concise, visual, and easy for others to understand.',
+                ),
+                const SizedBox(height: 18),
+                if (_errorMessage != null) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppColors.destructive.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: AppColors.destructive.withValues(alpha: 0.2),
                       ),
-                      const SizedBox(height: 18),
-                      if (_errorMessage != null) ...[
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: AppColors.destructive.withValues(
-                              alpha: 0.08,
+                    ),
+                    child: Text(
+                      _errorMessage!,
+                      style: const TextStyle(
+                        color: AppColors.destructive,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                const _FieldLabel('Photos'),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 104,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _images.length + (_images.length < 5 ? 1 : 0),
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(width: 12),
+                    itemBuilder: (context, index) {
+                      if (index == _images.length) {
+                        return InkWell(
+                          onTap: _addImage,
+                          borderRadius: BorderRadius.circular(22),
+                          child: Container(
+                            width: 104,
+                            decoration: BoxDecoration(
+                              color: AppColors.highlight,
+                              borderRadius: BorderRadius.circular(22),
                             ),
-                            borderRadius: BorderRadius.circular(18),
-                            border: Border.all(
-                              color: AppColors.destructive.withValues(
-                                alpha: 0.2,
+                            child: const Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.add_a_photo_outlined,
+                                  color: AppColors.plumDark,
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                  'Add photo',
+                                  style: TextStyle(fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+
+                      return Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(22),
+                            child: Image.network(
+                              _images[index],
+                              width: 104,
+                              height: 104,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: InkWell(
+                              onTap: () =>
+                                  setState(() => _images.removeAt(index)),
+                              borderRadius: BorderRadius.circular(999),
+                              child: Container(
+                                width: 28,
+                                height: 28,
+                                decoration: BoxDecoration(
+                                  color: AppColors.card.withValues(alpha: 0.92),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.close_rounded,
+                                  size: 16,
+                                ),
                               ),
                             ),
                           ),
-                          child: Text(
-                            _errorMessage!,
-                            style: const TextStyle(
-                              color: AppColors.destructive,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      const _FieldLabel('Photos'),
-                      const SizedBox(height: 8),
-                      SizedBox(
-                        height: 104,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount:
-                              _images.length + (_images.length < 5 ? 1 : 0),
-                          separatorBuilder: (context, index) =>
-                              const SizedBox(width: 12),
-                          itemBuilder: (context, index) {
-                            if (index == _images.length) {
-                              return InkWell(
-                                onTap: _addImage,
-                                borderRadius: BorderRadius.circular(22),
-                                child: Container(
-                                  width: 104,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.highlight,
-                                    borderRadius: BorderRadius.circular(22),
-                                  ),
-                                  child: const Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.add_a_photo_outlined,
-                                        color: AppColors.plumDark,
-                                      ),
-                                      SizedBox(height: 8),
-                                      Text(
-                                        'Add photo',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            }
-
-                            return Stack(
-                              children: [
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(22),
-                                  child: Image.network(
-                                    _images[index],
-                                    width: 104,
-                                    height: 104,
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                                Positioned(
-                                  top: 8,
-                                  right: 8,
-                                  child: InkWell(
-                                    onTap: () =>
-                                        setState(() => _images.removeAt(index)),
-                                    borderRadius: BorderRadius.circular(999),
-                                    child: Container(
-                                      width: 28,
-                                      height: 28,
-                                      decoration: BoxDecoration(
-                                        color: AppColors.card.withValues(
-                                          alpha: 0.92,
-                                        ),
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: const Icon(
-                                        Icons.close_rounded,
-                                        size: 16,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      const _FieldLabel('Title'),
-                      const SizedBox(height: 8),
-                      AppInput(
-                        controller: _titleController,
-                        hintText: 'What are you swapping?',
-                        textCapitalization: TextCapitalization.sentences,
-                      ),
-                      const SizedBox(height: 16),
-                      const _FieldLabel('Description'),
-                      const SizedBox(height: 8),
-                      AppInput(
-                        controller: _descriptionController,
-                        hintText:
-                            'Describe the item and what makes it worth trading.',
-                        maxLines: 4,
-                        textCapitalization: TextCapitalization.sentences,
-                      ),
-                      const SizedBox(height: 16),
-                      const _FieldLabel('Location'),
-                      const SizedBox(height: 8),
-                      AppInput(
-                        controller: _locationController,
-                        hintText: 'Neighborhood or city',
-                        textCapitalization: TextCapitalization.words,
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _DropdownField(
-                              label: 'Category',
-                              value: _selectedCategory,
-                              hint: 'Choose',
-                              items: categories,
-                              onChanged: (value) =>
-                                  setState(() => _selectedCategory = value),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _DropdownField(
-                              label: 'Condition',
-                              value: _selectedCondition,
-                              hint: 'Choose',
-                              items: conditions,
-                              onChanged: (value) =>
-                                  setState(() => _selectedCondition = value),
-                            ),
-                          ),
                         ],
-                      ),
-                      const SizedBox(height: 16),
-                      const _FieldLabel('Preferred exchange'),
-                      const SizedBox(height: 8),
-                      AppInput(
-                        controller: _wantsController,
-                        hintText:
-                            'Books, electronics, decor, or open to offers',
-                        textCapitalization: TextCapitalization.sentences,
-                      ),
-                      const SizedBox(height: 20),
-                      AppButton(
-                        label: _isSubmitting
-                            ? 'Publishing...'
-                            : 'Publish listing',
-                        icon: const Icon(Icons.arrow_upward_rounded, size: 18),
-                        onPressed: _isSubmitting ? null : _submit,
-                        size: AppButtonSize.xl,
-                        fullWidth: true,
-                      ),
-                    ],
+                      );
+                    },
                   ),
+                ),
+                const SizedBox(height: 18),
+                const _FieldLabel('Title'),
+                const SizedBox(height: 8),
+                AppInput(
+                  controller: _titleController,
+                  hintText: 'What are you swapping?',
+                  textCapitalization: TextCapitalization.sentences,
+                ),
+                const SizedBox(height: 16),
+                const _FieldLabel('Description'),
+                const SizedBox(height: 8),
+                AppInput(
+                  controller: _descriptionController,
+                  hintText:
+                      'Describe the item and what makes it worth trading.',
+                  maxLines: 4,
+                  textCapitalization: TextCapitalization.sentences,
+                ),
+                const SizedBox(height: 16),
+                const _FieldLabel('Location'),
+                const SizedBox(height: 8),
+                AppInput(
+                  controller: _locationController,
+                  hintText: 'Neighborhood or city',
+                  textCapitalization: TextCapitalization.words,
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _DropdownField(
+                        label: 'Category',
+                        value: _selectedCategory,
+                        hint: 'Choose',
+                        items: categories,
+                        onChanged: (value) =>
+                            setState(() => _selectedCategory = value),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                Row(
+                  children: [
+                    Expanded(
+                      child: _DropdownField(
+                        label: 'Condition',
+                        value: _selectedCondition,
+                        hint: 'Choose',
+                        items: conditions,
+                        onChanged: (value) =>
+                            setState(() => _selectedCondition = value),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+                const _FieldLabel('Preferred exchange'),
+                const SizedBox(height: 8),
+                AppInput(
+                  controller: _wantsController,
+                  hintText: 'Books, electronics, decor, or open to offers',
+                  textCapitalization: TextCapitalization.sentences,
+                ),
+                const SizedBox(height: 20),
+                AppButton(
+                  label: _isSubmitting ? 'Publishing...' : 'Publish listing',
+                  icon: const Icon(Icons.arrow_upward_rounded, size: 18),
+                  onPressed: _isSubmitting ? null : _submit,
+                  size: AppButtonSize.xl,
+                  fullWidth: true,
                 ),
               ],
             ),
-            const Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: BottomNav(currentRoute: RouteNames.add),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

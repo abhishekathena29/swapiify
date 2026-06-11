@@ -41,6 +41,55 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _forgotPassword(AuthProvider auth) async {
+    final controller = TextEditingController(text: _email.text.trim());
+    final email = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Reset password'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Enter your email and we will send you a password reset link.',
+              style: TextStyle(color: AppColors.mutedForeground, fontSize: 13),
+            ),
+            const SizedBox(height: 14),
+            AppInput(
+              controller: controller,
+              hintText: 'you@example.com',
+              prefixIcon: const Icon(Icons.mail_outline_rounded),
+              keyboardType: TextInputType.emailAddress,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () =>
+                Navigator.pop(dialogContext, controller.text.trim()),
+            child: const Text('Send link'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (email == null || !mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final error = await auth.sendPasswordReset(email);
+    if (!mounted) return;
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(error ?? 'Password reset link sent to $email.'),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
@@ -96,7 +145,7 @@ class _LoginScreenState extends State<LoginScreen> {
           Align(
             alignment: Alignment.centerRight,
             child: TextButton(
-              onPressed: () {},
+              onPressed: auth.isLoading ? null : () => _forgotPassword(auth),
               child: const Text(
                 'Forgot password?',
                 style: TextStyle(color: AppColors.mutedForeground),
@@ -503,26 +552,31 @@ class _AuthDivider extends StatelessWidget {
 class _SocialRow extends StatelessWidget {
   const _SocialRow();
 
+  Future<void> _handleGoogle(BuildContext context) async {
+    final auth = context.read<AuthProvider>();
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
+    final error = await auth.signInWithGoogle();
+    if (error != null) {
+      messenger.showSnackBar(SnackBar(content: Text(error)));
+      return;
+    }
+    if (auth.isAuthenticated) {
+      navigator.pushReplacementNamed(RouteNames.home);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
     return Row(
       children: [
         Expanded(
           child: AppButton(
-            label: 'Google',
+            label: 'Continue with Google',
             icon: const Icon(Icons.g_mobiledata_rounded, size: 24),
-            onPressed: () =>
-                Navigator.pushReplacementNamed(context, RouteNames.home),
-            variant: AppButtonVariant.outline,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: AppButton(
-            label: 'Apple',
-            icon: const Icon(Icons.apple_rounded, size: 18),
-            onPressed: () =>
-                Navigator.pushReplacementNamed(context, RouteNames.home),
+            onPressed: auth.isLoading ? null : () => _handleGoogle(context),
             variant: AppButtonVariant.outline,
           ),
         ),

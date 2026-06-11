@@ -40,6 +40,18 @@ class ChatProvider extends ChangeNotifier {
     });
   }
 
+  /// Live display name for a user, resolved from the `users` collection so
+  /// threads always show the person's real, current name (not a stale or
+  /// default "User" value stored on the chat document).
+  Stream<String?> userNameStream(String userId) {
+    if (userId.isEmpty) return Stream<String?>.value(null);
+    return _firestore.collection('users').doc(userId).snapshots().map((doc) {
+      final name = (doc.data()?['displayName'] as String?)?.trim();
+      if (name == null || name.isEmpty || name == 'User') return null;
+      return name;
+    });
+  }
+
   Stream<List<ChatMessage>> messagesStream({
     required String chatId,
     required String currentUserId,
