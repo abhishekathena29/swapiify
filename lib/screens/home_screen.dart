@@ -28,8 +28,7 @@ class HomeScreen extends StatelessWidget {
         stream: items.itemsStream(),
         builder: (context, snapshot) {
           final list = snapshot.data ?? const <Item>[];
-          final isLoading =
-              snapshot.connectionState == ConnectionState.waiting;
+          final isLoading = snapshot.connectionState == ConnectionState.waiting;
           final heroItems = list.take(5).toList();
 
           return ListView(
@@ -67,7 +66,7 @@ class _Header extends StatelessWidget {
         children: [
           Row(
             children: [
-              const AppAvatar(name: 'Swapiify', inverse: true),
+              const AppLogo(size: 52, radius: 18),
               const SizedBox(width: 12),
               const Expanded(
                 child: Column(
@@ -94,26 +93,13 @@ class _Header extends StatelessWidget {
                   ],
                 ),
               ),
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: AppColors.highlight,
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: const Icon(
-                  Icons.notifications_none_rounded,
-                  color: AppColors.plumDark,
-                ),
-              ),
             ],
           ),
           const SizedBox(height: 16),
           AppInput(
             hintText: 'Search for cameras, books, bags...',
             prefixIcon: const Icon(Icons.search_rounded, size: 20),
-            onSubmitted: (_) =>
-                Navigator.pushNamed(context, RouteNames.browse),
+            onSubmitted: (_) => Navigator.pushNamed(context, RouteNames.browse),
           ),
         ],
       ),
@@ -239,7 +225,7 @@ class _HeroCarouselState extends State<_HeroCarousel> {
               itemCount: items.length,
               itemBuilder: (context, itemIndex) {
                 final item = items[itemIndex];
-                final image = item.images.isNotEmpty ? item.images.first : '';
+                final image = item.images.isNotEmpty ? item.images.first : "";
                 return Padding(
                   padding: const EdgeInsets.only(left: 20, right: 8),
                   child: Container(
@@ -454,7 +440,6 @@ class _HowItWorksSection extends StatelessWidget {
               itemBuilder: (context, index) {
                 final step = howItWorks[index];
                 return Container(
-                  width: 126,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: AppColors.cream,

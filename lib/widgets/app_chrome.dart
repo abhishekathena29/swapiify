@@ -50,6 +50,28 @@ class AppBackdrop extends StatelessWidget {
   }
 }
 
+/// The Swapiify brand mark, rendered from the app icon asset with rounded
+/// corners. Used in the onboarding, auth and home headers.
+class AppLogo extends StatelessWidget {
+  final double size;
+  final double radius;
+
+  const AppLogo({super.key, this.size = 48, this.radius = 16});
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(radius),
+      child: Image.asset(
+        'assets/swapiify_icon.png',
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+      ),
+    );
+  }
+}
+
 class AppPanel extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;

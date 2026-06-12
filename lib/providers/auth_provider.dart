@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 
 import '../models/app_user.dart';
 
@@ -13,7 +12,6 @@ class AuthProvider extends ChangeNotifier {
   late final StreamSubscription<User?> _authSub;
 
   bool _isLoading = false;
-  bool _googleInitialized = false;
   String? _error;
   User? _user;
   AppUser? _profile;
@@ -149,52 +147,7 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<String?> signInWithGoogle() async {
-    _setLoading(true);
-    _error = null;
-    try {
-      final googleSignIn = GoogleSignIn.instance;
-      if (!_googleInitialized) {
-        await googleSignIn.initialize();
-        _googleInitialized = true;
-      }
-
-      final account = await googleSignIn.authenticate();
-      final idToken = account.authentication.idToken;
-      if (idToken == null) {
-        _error = 'Google sign-in did not return a token.';
-        return _error;
-      }
-
-      final credential = GoogleAuthProvider.credential(idToken: idToken);
-      final userCredential = await _auth.signInWithCredential(credential);
-      final user = userCredential.user;
-      if (user != null) {
-        await _ensureProfile(user, providedName: account.displayName);
-      }
-      return null;
-    } on GoogleSignInException catch (e) {
-      // The user dismissed the Google account picker — not an error to surface.
-      if (e.code == GoogleSignInExceptionCode.canceled) {
-        return null;
-      }
-      _error = e.description ?? 'Unable to sign in with Google.';
-      return _error;
-    } on FirebaseAuthException catch (e) {
-      _error = e.message ?? 'Unable to sign in with Google.';
-      return _error;
-    } catch (_) {
-      _error = 'Unable to sign in with Google.';
-      return _error;
-    } finally {
-      _setLoading(false);
-    }
-  }
-
   Future<void> signOut() async {
-    if (_googleInitialized) {
-      await GoogleSignIn.instance.signOut();
-    }
     await _auth.signOut();
   }
 

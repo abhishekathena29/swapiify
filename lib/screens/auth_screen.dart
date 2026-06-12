@@ -42,43 +42,11 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _forgotPassword(AuthProvider auth) async {
-    final controller = TextEditingController(text: _email.text.trim());
     final email = await showDialog<String>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Reset password'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Enter your email and we will send you a password reset link.',
-              style: TextStyle(color: AppColors.mutedForeground, fontSize: 13),
-            ),
-            const SizedBox(height: 14),
-            AppInput(
-              controller: controller,
-              hintText: 'you@example.com',
-              prefixIcon: const Icon(Icons.mail_outline_rounded),
-              keyboardType: TextInputType.emailAddress,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () =>
-                Navigator.pop(dialogContext, controller.text.trim()),
-            child: const Text('Send link'),
-          ),
-        ],
-      ),
+      builder: (_) => _ForgotPasswordDialog(initialEmail: _email.text.trim()),
     );
-    controller.dispose();
-    if (email == null || !mounted) return;
+    if (email == null || email.isEmpty || !mounted) return;
 
     final messenger = ScaffoldMessenger.of(context);
     final error = await auth.sendPasswordReset(email);
@@ -160,10 +128,6 @@ class _LoginScreenState extends State<LoginScreen> {
             size: AppButtonSize.xl,
             fullWidth: true,
           ),
-          const SizedBox(height: 18),
-          const _AuthDivider(),
-          const SizedBox(height: 18),
-          const _SocialRow(),
         ],
       ),
     );
@@ -303,10 +267,6 @@ class _SignupScreenState extends State<SignupScreen> {
             size: AppButtonSize.xl,
             fullWidth: true,
           ),
-          const SizedBox(height: 18),
-          const _AuthDivider(),
-          const SizedBox(height: 18),
-          const _SocialRow(),
         ],
       ),
     );
@@ -407,19 +367,7 @@ class _AuthIntro extends StatelessWidget {
         const SizedBox(height: 8),
         Row(
           children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: AppColors.card.withValues(alpha: 0.9),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: const Icon(
-                Icons.swap_horiz_rounded,
-                color: AppColors.coralDark,
-              ),
-            ),
+            const AppLogo(size: 52, radius: 18),
             const SizedBox(width: 12),
             const Text(
               'swapiify',
@@ -528,57 +476,59 @@ class _InlineError extends StatelessWidget {
   }
 }
 
-class _AuthDivider extends StatelessWidget {
-  const _AuthDivider();
+class _ForgotPasswordDialog extends StatefulWidget {
+  final String initialEmail;
+
+  const _ForgotPasswordDialog({required this.initialEmail});
 
   @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: const [
-        Expanded(child: Divider(color: AppColors.border)),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 12),
-          child: Text(
-            'or continue with',
-            style: TextStyle(color: AppColors.mutedForeground, fontSize: 12),
-          ),
-        ),
-        Expanded(child: Divider(color: AppColors.border)),
-      ],
-    );
-  }
+  State<_ForgotPasswordDialog> createState() => _ForgotPasswordDialogState();
 }
 
-class _SocialRow extends StatelessWidget {
-  const _SocialRow();
+class _ForgotPasswordDialogState extends State<_ForgotPasswordDialog> {
+  late final TextEditingController _controller;
 
-  Future<void> _handleGoogle(BuildContext context) async {
-    final auth = context.read<AuthProvider>();
-    final navigator = Navigator.of(context);
-    final messenger = ScaffoldMessenger.of(context);
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialEmail);
+  }
 
-    final error = await auth.signInWithGoogle();
-    if (error != null) {
-      messenger.showSnackBar(SnackBar(content: Text(error)));
-      return;
-    }
-    if (auth.isAuthenticated) {
-      navigator.pushReplacementNamed(RouteNames.home);
-    }
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final auth = context.watch<AuthProvider>();
-    return Row(
-      children: [
-        Expanded(
-          child: AppButton(
-            label: 'Continue with Google',
-            icon: const Icon(Icons.g_mobiledata_rounded, size: 24),
-            onPressed: auth.isLoading ? null : () => _handleGoogle(context),
-            variant: AppButtonVariant.outline,
+    return AlertDialog(
+      title: const Text('Reset password'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Enter your email and we will send you a password reset link.',
+            style: TextStyle(color: AppColors.mutedForeground, fontSize: 13),
           ),
+          const SizedBox(height: 14),
+          AppInput(
+            controller: _controller,
+            hintText: 'you@example.com',
+            prefixIcon: const Icon(Icons.mail_outline_rounded),
+            keyboardType: TextInputType.emailAddress,
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, _controller.text.trim()),
+          child: const Text('Send link'),
         ),
       ],
     );

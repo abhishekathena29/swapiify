@@ -6,7 +6,6 @@ import '../providers/items_provider.dart';
 import '../routes/app_router.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_badge.dart';
-import '../widgets/app_button.dart';
 import '../widgets/app_chrome.dart';
 import '../widgets/app_input.dart';
 import '../widgets/app_scaffold.dart';
@@ -21,6 +20,7 @@ class BrowseScreen extends StatefulWidget {
 
 class _BrowseScreenState extends State<BrowseScreen> {
   String _activeCategory = 'All';
+  String _query = '';
 
   @override
   Widget build(BuildContext context) {
@@ -33,11 +33,16 @@ class _BrowseScreenState extends State<BrowseScreen> {
         builder: (context, snapshot) {
                 final items = snapshot.data ?? const <Item>[];
                 final categories = _buildCategories(items);
-                final filtered = _activeCategory == 'All'
-                    ? items
-                    : items
-                          .where((item) => item.category == _activeCategory)
-                          .toList();
+                final query = _query.trim().toLowerCase();
+                final filtered = items.where((item) {
+                  final matchesCategory = _activeCategory == 'All' ||
+                      item.category == _activeCategory;
+                  final matchesQuery = query.isEmpty ||
+                      item.title.toLowerCase().contains(query) ||
+                      item.category.toLowerCase().contains(query) ||
+                      item.location.toLowerCase().contains(query);
+                  return matchesCategory && matchesQuery;
+                }).toList();
 
                 return ListView(
                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 130),
@@ -47,6 +52,7 @@ class _BrowseScreenState extends State<BrowseScreen> {
                       activeCategory: _activeCategory,
                       onCategoryTap: (value) =>
                           setState(() => _activeCategory = value),
+                      onSearch: (value) => setState(() => _query = value),
                     ),
                     const SizedBox(height: 18),
                     AppPanel(
@@ -81,11 +87,13 @@ class _Header extends StatelessWidget {
   final List<String> categories;
   final String activeCategory;
   final ValueChanged<String> onCategoryTap;
+  final ValueChanged<String> onSearch;
 
   const _Header({
     required this.categories,
     required this.activeCategory,
     required this.onCategoryTap,
+    required this.onSearch,
   });
 
   @override
@@ -93,22 +101,17 @@ class _Header extends StatelessWidget {
     return AppPanel(
       child: Column(
         children: [
-          AppSectionHeading(
+          const AppSectionHeading(
             eyebrow: 'Browse',
             title: 'A calmer marketplace for local swaps.',
             subtitle:
                 'Filter by category and move through listings without visual overload.',
-            trailing: AppButton(
-              icon: const Icon(Icons.tune_rounded, size: 18),
-              onPressed: () {},
-              variant: AppButtonVariant.outline,
-              size: AppButtonSize.icon,
-            ),
           ),
           const SizedBox(height: 18),
-          const AppInput(
+          AppInput(
             hintText: 'Search items, styles, categories...',
-            prefixIcon: Icon(Icons.search_rounded),
+            prefixIcon: const Icon(Icons.search_rounded),
+            onChanged: onSearch,
           ),
           const SizedBox(height: 16),
           SizedBox(

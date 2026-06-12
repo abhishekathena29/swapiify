@@ -252,68 +252,52 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
                   child: AppPanel(
                     padding: const EdgeInsets.all(12),
-                    child: Row(
-                      children: [
-                        AppButton(
-                          icon: const Icon(Icons.message_rounded, size: 18),
-                          onPressed: () async {
-                            final snapshot = await itemsProvider
-                                .itemStream(widget.productId)
-                                .first;
-                            final sellerId = snapshot?.ownerId;
-                            final sellerName = snapshot?.ownerName ?? 'Seller';
+                    child: AppButton(
+                      label: 'Message seller',
+                      icon: const Icon(Icons.message_rounded, size: 18),
+                      onPressed: () async {
+                        final snapshot = await itemsProvider
+                            .itemStream(widget.productId)
+                            .first;
+                        final sellerId = snapshot?.ownerId;
+                        final sellerName = snapshot?.ownerName ?? 'Seller';
 
-                            if (auth.profile == null) {
-                              if (!context.mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Please sign in to message sellers.',
-                                  ),
-                                ),
-                              );
-                              return;
-                            }
-                            if (sellerId == null) {
-                              if (!context.mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Unable to start chat for this item.',
-                                  ),
-                                ),
-                              );
-                              return;
-                            }
-
-                            final chatId = await chatProvider.startChatWith(
-                              currentUser: auth.profile!,
-                              otherUserId: sellerId,
-                              otherUserName: sellerName,
-                            );
-                            if (!context.mounted) return;
-                            Navigator.pushNamed(
-                              context,
-                              '${RouteNames.chat}/$chatId',
-                            );
-                          },
-                          variant: AppButtonVariant.outline,
-                          size: AppButtonSize.icon,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: AppButton(
-                            label: 'Make an offer',
-                            icon: const Icon(
-                              Icons.auto_awesome_rounded,
-                              size: 18,
+                        if (auth.profile == null) {
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Please sign in to message sellers.',
+                              ),
                             ),
-                            onPressed: () {},
-                            size: AppButtonSize.xl,
-                            fullWidth: true,
-                          ),
-                        ),
-                      ],
+                          );
+                          return;
+                        }
+                        if (sellerId == null) {
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Unable to start chat for this item.',
+                              ),
+                            ),
+                          );
+                          return;
+                        }
+
+                        final chatId = await chatProvider.startChatWith(
+                          currentUser: auth.profile!,
+                          otherUserId: sellerId,
+                          otherUserName: sellerName,
+                        );
+                        if (!context.mounted) return;
+                        Navigator.pushNamed(
+                          context,
+                          '${RouteNames.chat}/$chatId',
+                        );
+                      },
+                      size: AppButtonSize.xl,
+                      fullWidth: true,
                     ),
                   ),
                 ),

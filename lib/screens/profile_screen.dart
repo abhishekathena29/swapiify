@@ -153,16 +153,6 @@ class ProfileScreen extends StatelessWidget {
                           RouteNames.swapHistory,
                         ),
                       ),
-                      _MenuTile(
-                        icon: Icons.tune_rounded,
-                        label: 'Settings',
-                        subtitle: 'Privacy, alerts, and account preferences.',
-                        onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Settings are coming soon.'),
-                          ),
-                        ),
-                      ),
                       const SizedBox(height: 14),
                       AppButton(
                         label: 'Log out',
